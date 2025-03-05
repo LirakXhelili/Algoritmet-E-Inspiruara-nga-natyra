@@ -1,2 +1,2 @@
-# Algoritmet-E-Inspiruara-nga-natyra
+# Algoritmet-E-Inspiruara-Nga-Natyra
 Lende e masterit 
