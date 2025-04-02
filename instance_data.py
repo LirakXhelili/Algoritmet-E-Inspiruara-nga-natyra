@@ -1,16 +1,24 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple,Set
 from .warehouse import warehouse
 from .store import store
+from .supply import supply
 
 class InstanceData:
-    def __init__(self, num_warehouses: int, num_stores: int, 
-                 warehouses: List[warehouse], stores: List[store], 
-                 supply_cost: Dict[Tuple[int, int], int], incompatibilities: List[Tuple[int, int]]):
+    def __init__(
+        self,
+        num_warehouses: int,
+        num_stores: int,
+        warehouses: List[warehouse],
+        stores: List[store],
+        supply: List[supply],
+        incompatibilities: Dict[int, Set[int]] 
+    ):
+        
         self.num_warehouses = num_warehouses
         self.num_stores = num_stores
         self.warehouses = warehouses
         self.stores = stores
-        self.supply_cost = supply_cost
+        self.supply = supply
         self.incompatibilities = incompatibilities
 
     def describe(self):
