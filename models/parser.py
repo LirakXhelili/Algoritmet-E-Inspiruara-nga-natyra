@@ -163,30 +163,43 @@ class WarehouseParser:
             raise ValueError(f"{name} array not found or malformed")
         return [int(x.strip()) for x in match.group(1).split(',') if x.strip()]
 
-def write_results_to_file(data: InstanceData, output_file: str):
-    """Write the results to the output.txt file in the Output folder"""
-    try:
-        with open(output_file, 'w') as file:
-            file.write(f"Number of Warehouses: {data.num_warehouses}\n")
-            file.write(f"Number of Stores: {data.num_stores}\n")
+# def write_results_to_file(data: InstanceData, output_file: str):
+#     """Write the results to the output.txt file in the Output folder"""
+#     try:
+#         with open(output_file, 'w') as file:
+#             file.write(f"Number of Warehouses: {data.num_warehouses}\n")
+#             file.write(f"Number of Stores: {data.num_stores}\n")
 
-            file.write("\nWarehouses:\n")
-            for warehouse in data.warehouse_data:
-                file.write(f"Warehouse {warehouse.id} - Capacity: {warehouse.capacity}, Fixed Cost: {warehouse.fixed_cost}\n")
+#             file.write("\nWarehouses:\n")
+#             for warehouse in data.warehouse_data:
+#                 file.write(f"Warehouse {warehouse.id} - Capacity: {warehouse.capacity}, Fixed Cost: {warehouse.fixed_cost}\n")
 
-            file.write("\nStores:\n")
-            for store in data.store_data:
-                file.write(f"Store {store.id} - Demand: {store.demand}\n")
+#             file.write("\nStores:\n")
+#             for store in data.store_data:
+#                 file.write(f"Store {store.id} - Demand: {store.demand}\n")
 
-            file.write("\nSupply Costs:\n")
-            for supply in data.supply_data:
-                file.write(f"Store {supply.store_id} - Warehouse {supply.warehouse_id} - Cost: {supply.cost}\n")
+#             file.write("\nSupply Costs:\n")
+#             for supply in data.supply_data:
+#                 file.write(f"Store {supply.store_id} - Warehouse {supply.warehouse_id} - Cost: {supply.cost}\n")
 
-            file.write("\nIncompatibilities:\n")
-            for store_id, incompatible_stores in data.incompatibilities.items():
-                file.write(f"Store {store_id} - Incompatible with stores: {', '.join(map(str, incompatible_stores))}\n")
+#             file.write("\nIncompatibilities:\n")
+#             for store_id, incompatible_stores in data.incompatibilities.items():
+#                 file.write(f"Store {store_id} - Incompatible with stores: {', '.join(map(str, incompatible_stores))}\n")
 
-        print(f"Results successfully written to {output_file}")
+#         print(f"Results successfully written to {output_file}")
 
-    except Exception as e:
-        print(f"Error writing results to {output_file}: {str(e)}")
+#     except Exception as e:
+#         print(f"Error writing results to {output_file}: {str(e)}")
+
+
+    def write_results(self):
+        triples = []
+        for store_id in sorted(self.store_assignments.keys()):
+            for (w_id, q) in self.store_assignments[store_id]:
+                triples.append((store_id, w_id, q))
+        
+        with open("initial_solution.txt", "w") as f:
+            f.write("{")
+            f.write(", ".join(f"({s}, {w}, {q})" for s, w, q in triples))
+            f.write("}")
+        print("Solution written in triple format.")
