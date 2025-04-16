@@ -9,7 +9,7 @@ class InitialSolution:
 	def __init__(self, used_warehouses, unused_warehouses, store_assignments):
 		self.used_warehouses = used_warehouses
 		self.unused_warehouses = unused_warehouses
-		self.store_assignments = store_assignments  # Dict[store_id] = warehouse_id
+		self.store_assignments = store_assignments  
 
 	def write_results(self):
 		with open("initial_solution.txt", "w") as f:
