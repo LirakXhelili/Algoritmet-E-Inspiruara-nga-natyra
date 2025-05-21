@@ -56,10 +56,10 @@ class InitialSolution:
 			store_supplies[store_id].sort(key=lambda x: x[1])
 
 		store_assignments = defaultdict(list)
-		warehouse_capacity = {w.id: w.capacity for w in data.warehouse_data}  # FIXED HERE
+		warehouse_capacity = {w.id: w.capacity for w in data.warehouses}  # Changed from warehouse_data
 		warehouse_assigned_stores = defaultdict(set)
 
-		stores = data.store_data[:]  
+		stores = data.stores[:]  # Changed from store_data
 		random.shuffle(stores)
 
 		for store in stores:
@@ -90,8 +90,8 @@ class InitialSolution:
 			if remaining_demand > 0:
 				raise ValueError(f"Store {store_id} demand not met. Remaining: {remaining_demand}")
 
-		used_warehouses = [w_id for w_id in warehouse_capacity if warehouse_capacity[w_id] < data.warehouse_data[w_id-1].capacity]
-		unused_warehouses = [w.id for w in data.warehouse_data if w.id not in used_warehouses]  # FIXED HERE
+		used_warehouses = [w_id for w_id in warehouse_capacity if warehouse_capacity[w_id] < data.warehouses[w_id-1].capacity]
+		unused_warehouses = [w.id for w in data.warehouses if w.id not in used_warehouses]  # Changed from warehouse_data
 
 		return InitialSolution(used_warehouses, unused_warehouses, store_assignments)
 			# for supply in data.supply_data:
