@@ -26,16 +26,16 @@ class InstanceData:
     def __init__(self, num_warehouses, num_stores, warehouses, stores, supply, incompatibilities):
         self.num_warehouses = num_warehouses
         self.num_stores = num_stores
-        self.warehouse_data = warehouses
-        self.store_data = stores
+        self.warehouses = warehouses
+        self.stores = stores
         self.supply_data = supply
         self.incompatibilities = incompatibilities
 
     def describe(self):
         print(f"Number of Warehouses: {self.num_warehouses}")
         print(f"Number of Stores: {self.num_stores}")
-        print(f"Warehouses: {self.warehouse_data}")
-        print(f"Stores: {self.store_data}")
+        print(f"Warehouses: {self.warehouses}")
+        print(f"Stores: {self.stores}")
 
 
 class WarehouseParser:

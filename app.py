@@ -20,10 +20,10 @@ def save_solution_to_file(solution, file_name):
     print(f"Solution saved to {file_name}")
 
 if __name__ == '__main__':
-    input_file = './inputs/wlp01.dzn'  # Adjust the file path as needed
-    output_file = './Output/output.txt'  # The output file path
+    input_file = './inputs/wlp01.dzn'  
+    output_file = './Output/output.txt'  
 
-    # Initialize and parse the data
+    
     parser = WarehouseParser(input_file)
     data = parser.parse()
 
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     current_solution = {
         'open_warehouses': list(initial_sol.used_warehouses),  # Convert set to list for saving
         'total_cost': 0,  # Placeholder, will be calculated by the operator
-        'supply_matrix': [[0 for _ in range(len(data.warehouse_data))] for _ in range(len(data.store_data))]
+        'supply_matrix': [[0 for _ in range(len(data.warehouses))] for _ in range(len(data.stores))]
         # Initialize a 2D list with zeros (stores × warehouses)
     }
 
@@ -43,8 +43,8 @@ if __name__ == '__main__':
 
     # Run the warehouse operator to optimize the solution
     optimized_solution, success = warehouse_operator(
-        data.warehouse_data,  # List of warehouses
-        data.store_data,      # List of stores
+        data.warehouses,  # List of warehouses
+        data.stores,      # List of stores
         current_solution,     # Initial solution
         data.incompatibilities  # Incompatibility constraints
     )
