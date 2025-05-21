@@ -26,16 +26,16 @@ class InstanceData:
     def __init__(self, num_warehouses, num_stores, warehouses, stores, supply, incompatibilities):
         self.num_warehouses = num_warehouses
         self.num_stores = num_stores
-        self.warehouse_data = warehouses
-        self.store_data = stores
+        self.warehouses = warehouses
+        self.stores = stores
         self.supply_data = supply
         self.incompatibilities = incompatibilities
 
     def describe(self):
         print(f"Number of Warehouses: {self.num_warehouses}")
         print(f"Number of Stores: {self.num_stores}")
-        print(f"Warehouses: {self.warehouse_data}")
-        print(f"Stores: {self.store_data}")
+        print(f"Warehouses: {self.warehouses}")
+        print(f"Stores: {self.stores}")
 
 
 class WarehouseParser:
@@ -127,7 +127,7 @@ class WarehouseParser:
                 ]
 
                 stores = [
-                    store(id=i + 1, demand=goods[i])
+                    store(id=i + 1, demand=goods[i], supply_costs=supply_costs[i])
                     for i in range(num_stores)
                 ]
 
@@ -162,35 +162,6 @@ class WarehouseParser:
         if not match:
             raise ValueError(f"{name} array not found or malformed")
         return [int(x.strip()) for x in match.group(1).split(',') if x.strip()]
-
-# def write_results_to_file(data: InstanceData, output_file: str):
-#     """Write the results to the output.txt file in the Output folder"""
-#     try:
-#         with open(output_file, 'w') as file:
-#             file.write(f"Number of Warehouses: {data.num_warehouses}\n")
-#             file.write(f"Number of Stores: {data.num_stores}\n")
-
-#             file.write("\nWarehouses:\n")
-#             for warehouse in data.warehouse_data:
-#                 file.write(f"Warehouse {warehouse.id} - Capacity: {warehouse.capacity}, Fixed Cost: {warehouse.fixed_cost}\n")
-
-#             file.write("\nStores:\n")
-#             for store in data.store_data:
-#                 file.write(f"Store {store.id} - Demand: {store.demand}\n")
-
-#             file.write("\nSupply Costs:\n")
-#             for supply in data.supply_data:
-#                 file.write(f"Store {supply.store_id} - Warehouse {supply.warehouse_id} - Cost: {supply.cost}\n")
-
-#             file.write("\nIncompatibilities:\n")
-#             for store_id, incompatible_stores in data.incompatibilities.items():
-#                 file.write(f"Store {store_id} - Incompatible with stores: {', '.join(map(str, incompatible_stores))}\n")
-
-#         print(f"Results successfully written to {output_file}")
-
-#     except Exception as e:
-#         print(f"Error writing results to {output_file}: {str(e)}")
-
 
     def write_results(self):
         triples = []
