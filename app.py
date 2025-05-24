@@ -1,8 +1,7 @@
 from collections import defaultdict
 from models.parser import WarehouseParser
 from models.solution import InitialSolution
-from operator_functions.warehouse_operator import warehouse_operator  
-
+from Operator.warehouse_operator import(move_to_cheaper_warehouse, operator_swap_store_assignments)
 def validate_solution(solution: dict, data):
    
     for store_idx, store in enumerate(data.stores):
@@ -72,6 +71,24 @@ def save_solution_to_file(solution, file_name,format='triples'):
 
     print(f"Solution saved to {file_name}")
 
+def calculate_total_cost(solution, data):
+    total_cost = 0
+
+    for warehouse in data.warehouses:
+        if warehouse.id in solution['open_warehouses']:
+            total_cost += warehouse.fixed_cost
+
+    for store_idx, store in enumerate(data.stores):
+        for wh_idx in range(len(data.warehouses)):
+            qty = solution['supply_matrix'][store_idx][wh_idx]
+            if qty > 0:
+                total_cost += qty * store.supply_costs[wh_idx]
+
+    return total_cost
+
+
+
+
 if __name__ == '__main__':
     input_file = './inputs/wlp01.dzn'  
     output_file = './Output/output.txt'  
@@ -101,6 +118,27 @@ if __name__ == '__main__':
  
     save_solution_to_file(current_solution, "./Output/initial_solution.txt")
 
+
+print("\n=== APPLYING OPERATORS ===")
+
+new_solution_1, success_1 = move_to_cheaper_warehouse(current_solution, data)
+if success_1:
+    cost_1 = calculate_total_cost(new_solution_1, data)
+    is_valid, msg = validate_solution(new_solution_1, data)
+    print(f"[Move to Cheaper] Cost: {cost_1}, Valid: {is_valid}, Message: {msg}")
+    save_solution_to_file(new_solution_1, "./Output/solution_after_operator1.txt")
+else:
+    print("Operator 1: No move applied.")
+
+# 2. Operator: swap store assignments
+new_solution_2, success_2 = operator_swap_store_assignments(current_solution, data)
+if success_2:
+    cost_2 = calculate_total_cost(new_solution_2, data)
+    is_valid, msg = validate_solution(new_solution_2, data)
+    print(f"[Swap Stores] Cost: {cost_2}, Valid: {is_valid}, Message: {msg}")
+    save_solution_to_file(new_solution_2, "./Output/solution_after_operator2.txt")
+else:
+    print("Operator 2: No swap applied.")
   
     # optimized_solution, success = warehouse_operator(
     #     data.warehouses,  
@@ -133,3 +171,4 @@ if __name__ == '__main__':
     #     save_solution_to_file(optimized_solution, "./Output/optimized_solution.txt")
     # else:
     #     print("No improvement was made to the solution.")
+
