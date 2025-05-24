@@ -12,34 +12,22 @@ class InitialSolution:
 		self.unused_warehouses = unused_warehouses
 		self.store_assignments = store_assignments  
 
-	# def write_results(self):
-	# 	triplets = []
-	# 	for store_id in sorted(self.store_assignments.keys()):
-	# 		for(w_id,q) in self.store_assignments[store_id]:
-	# 			triplets.append((store_id,w_id,q))
+	def write_results(self):
+		triplets = []
+		for store_id in sorted(self.store_assignments.keys()):
+			for(w_id,q) in self.store_assignments[store_id]:
+				triplets.append((store_id,w_id,q))
 
 	
 
-		# with open("initial_solution.txt", "w") as f:
-		# 	f.write(f"{len(self.used_warehouses)}\n")
-		# 	for warehouse_id in self.used_warehouses:
-		# 		assigned_stores = [s for s, w in self.store_assignments.items() if w == warehouse_id]
-		# 		f.write(f"{warehouse_id} {len(assigned_stores)}\n")
-		# 		f.write(" ".join(map(str, assigned_stores)) + "\n")
-
-		# print("Initial solution ")
-
-	def write_results(self):
-		triples = []
-		for store_id in sorted(self.store_assignments.keys()):
-			for (w_id, q) in self.store_assignments[store_id]:
-				triples.append((store_id, w_id, q))
-    
 		with open("initial_solution.txt", "w") as f:
 			f.write("{")
-			f.write(", ".join(f"({s}, {w}, {q})" for s, w, q in triples))
+			f.write(", ".join(f"({s},{w},{q})" for s,w,q in triplets))
 			f.write("}")
-		print("Solution written successfully.")
+		print("Solution written successfully. ")
+			
+
+	
 
 	@staticmethod
 	def generate_initial_solution(input_file: str):
@@ -47,68 +35,85 @@ class InitialSolution:
 		data: instance_data.InstanceData = warehouse_parser.parse()  
 		data.describe() 
 
-		incompatible_stores = data.incompatibilities  # Already fixed earlier
+		warehouse_info = {
+			w.id: {
+				'capacity' : w.capacity,
+				'remaining' : w.capacity,
+				'fixed_cost' : w.fixed_cost,
+				'assigned_stores':set()
+			} for w in data.warehouses
+		}
+
+		incompatibilities = data.incompatibilities
+		stores_sorted = sorted(data.stores, key=lambda s:len(incompatibilities.get(s.id,set())), reverse=True)
+
+		# incompatibilities = defaultdict(set)
+		# for store_pair in data.incompatibilities:
+		# 	s1,s2 = store_pair
+		# 	incompatibilities[s1].add(s2)
+		# 	incompatibilities[s2].add(s1)
+		
+		# stores_sorted = sorted(data.stores, key=lambda s:len(incompatibilities.get(s.id,set())),reverse=True)
 
 		store_supplies = defaultdict(list)
 		for supply in data.supply_data:
-			store_supplies[supply.store_id].append((supply.warehouse_id, supply.cost))
+			store_id = supply.store_id
+			w_id = supply.warehouse_id
+			total_cost = supply.cost * data.stores[store_id-1].demand
+			if len(warehouse_info[w_id]['assigned_stores'])==0:
+				total_cost+=warehouse_info[w_id]['fixed_cost']
+			store_supplies[store_id].append((w_id,supply.cost,total_cost))
+
+
 		for store_id in store_supplies:
-			store_supplies[store_id].sort(key=lambda x: x[1])
+				store_supplies[store_id].sort(key=lambda x: (x[2],x[1]))
 
 		store_assignments = defaultdict(list)
-		warehouse_capacity = {w.id: w.capacity for w in data.warehouses}  # Changed from warehouse_data
-		warehouse_assigned_stores = defaultdict(set)
 
-		stores = data.stores[:]  # Changed from store_data
-		random.shuffle(stores)
-
-		for store in stores:
+		for store in stores_sorted:
 			store_id = store.id
 			remaining_demand = store.demand
-			supplies = store_supplies.get(store_id, [])
+			store_incompatibilities = incompatibilities.get(store_id,set())
 
-			for (w_id, cost) in supplies:
-				if remaining_demand <= 0:
+			for w_id, unit_cost, total_cost in store_supplies[store_id]:
+				if remaining_demand<=0:
 					break
-				if warehouse_capacity[w_id] <= 0:
+				warehouse = warehouse_info[w_id]
+				if warehouse['remaining']<=0:
 					continue
 
-				# Check incompatibility
-				incompatible = any(s in incompatible_stores[store_id] for s in warehouse_assigned_stores[w_id])
-				if incompatible:
+				if store_incompatibilities & warehouse['assigned_stores']:
 					continue
 
-				alloc = min(remaining_demand, warehouse_capacity[w_id])
-				if alloc <= 0:
-					continue
-
-				store_assignments[store_id].append((w_id, alloc))
-				warehouse_capacity[w_id] -= alloc
-				warehouse_assigned_stores[w_id].add(store_id)
-				remaining_demand -= alloc
-
+				alloc = min(remaining_demand, warehouse['remaining'])
+				store_assignments[store_id].append((w_id,alloc))
+				warehouse['remaining']-=alloc
+				warehouse['assigned_stores'].add(store_id)
+				remaining_demand-=alloc
+			
 			if remaining_demand > 0:
-				raise ValueError(f"Store {store_id} demand not met. Remaining: {remaining_demand}")
+				for w_id, warehouse in warehouse_info.items():
+					if remaining_demand<=0:
+						break
+					if warehouse['remaining']<=0:
+						continue
+					if store_incompatibilities&warehouse['assigned_stores']:
+						continue
 
-		used_warehouses = [w_id for w_id in warehouse_capacity if warehouse_capacity[w_id] < data.warehouses[w_id-1].capacity]
-		unused_warehouses = [w.id for w in data.warehouses if w.id not in used_warehouses]  # Changed from warehouse_data
+					alloc = min(remaining_demand,warehouse['remaining'])
+					store_assignments[store_id].append((w_id,alloc))
+					warehouse['remaining']-=alloc
+					warehouse['assigned_stores'].add(store_id)
+					remaining_demand-=alloc
+			
+			if remaining_demand>0:
+				raise ValueError(f"Store {store_id} demand not met. Remaining: {remaining_demand}")
+			
+			
+
+		used_warehouses = [w_id for w_id, w in warehouse_info.items() if len(w['assigned_stores']) > 0]
+		unused_warehouses = [w_id for w_id, w in warehouse_info.items() if len(w['assigned_stores']) == 0]
+	
 
 		return InitialSolution(used_warehouses, unused_warehouses, store_assignments)
-			# for supply in data.supply_data:
-			# 	if supply.store_id != store.store_id:
-			# 		continue
-
-			# 	w_id = supply.warehouse_id
-			# 	if warehouse_capacity[w_id] >= store.demand and supply.cost < min_cost:
-			# 		min_cost = supply.cost
-			# 		best_warehouse = w_id
-
 			
-			# if best_warehouse is not None:
-			# 	store_assignments[store.store_id] = best_warehouse
-			# 	warehouse_capacity[best_warehouse] -= store.demand  
-			# 	used_warehouses.add(best_warehouse)  
-			# 	unused_warehouses.discard(best_warehouse) 
-
-		
-		# return InitialSolution(list(used_warehouses), list(unused_warehouses), store_assignments)
