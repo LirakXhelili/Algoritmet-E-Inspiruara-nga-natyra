@@ -4,13 +4,13 @@ from models.solution import InitialSolution
 from operator_functions.warehouse_operator import warehouse_operator  
 
 def validate_solution(solution: dict, data):
-    # Validate store demands
+   
     for store_idx, store in enumerate(data.stores):
         total = sum(solution['supply_matrix'][store_idx])
         if total != store.demand:
             return False, f"Store {store.id} demand not met (required: {store.demand}, got: {total})"
 
-    # Validate warehouse capacity
+   
     warehouse_usage = [0] * len(data.warehouses)
     for store_idx in range(len(data.stores)):
         for wh_idx in range(len(data.warehouses)):
