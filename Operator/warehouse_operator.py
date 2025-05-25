@@ -44,6 +44,9 @@ def move_to_cheaper_warehouse(solution, data):
 
             supply_matrix[store_idx][wh_from] = 0
             supply_matrix[store_idx][wh_to] += qty_from
+            if wh_to + 1 not in new_solution['open_warehouses']:
+                new_solution['open_warehouses'].append(wh_to + 1)
+
 
             still_used = any(supply_matrix[s][wh_from] > 0 for s in range(len(data.stores)))
             if not still_used:
@@ -62,23 +65,69 @@ def operator_swap_store_assignments(solution, data):
     s1_idx, s2_idx = random.sample(range(len(data.stores)), 2)
     s1, s2 = data.stores[s1_idx], data.stores[s2_idx]
 
-    for w1 in range(len(data.warehouses)):
-        if supply_matrix[s1_idx][w1] > 0 and supply_matrix[s2_idx][w1] == 0:
-            qty = supply_matrix[s1_idx][w1]
-            used = sum(supply_matrix[s][w1] for s in range(len(data.stores)))
-            capacity = data.warehouses[w1].capacity
+    w1 = next((w for w in range(len(data.warehouses)) if supply_matrix[s1_idx][w] > 0), None)
+    w2 = next((w for w in range(len(data.warehouses)) if supply_matrix[s2_idx][w] > 0), None)
 
-            if used - qty + s2.demand > capacity:
-                continue
+    if w1 is None or w2 is None or w1 == w2:
+        return solution, False
+    
+    used_w1 = sum(supply_matrix[s][w1] for s in range(len(data.stores)))
+    used_w2 = sum(supply_matrix[s][w2] for s in range(len(data.stores)))
 
-            stores_assigned = [s for s in range(len(data.stores)) if supply_matrix[s][w1] > 0]
-            if any(s2.id in data.incompatibilities.get(data.stores[s].id, set()) for s in stores_assigned):
-                continue
+    cap_w1 = data.warehouses[w1].capacity
+    cap_w2 = data.warehouses[w2].capacity
 
-            for w in range(len(data.warehouses)):
-                supply_matrix[s2_idx][w] = 0
-            supply_matrix[s2_idx][w1] = s2.demand
+    new_w1_usage = used_w1 - s1.demand + s2.demand
+    new_w2_usage = used_w2 - s2.demand + s1.demand
 
-            return new_solution, True
+    if new_w1_usage > cap_w1 or new_w2_usage > cap_w2:
+        return solution, False
+    
+    stores_w1 = [s for s in range(len(data.stores)) if supply_matrix[s][w1] > 0 and s != s1_idx]
+    stores_w2 = [s for s in range(len(data.stores)) if supply_matrix[s][w2] > 0 and s != s2_idx]
 
-    return solution, False
+    if any(s2.id in data.incompatibilities.get(data.stores[s].id, set()) for s in stores_w1):
+        return solution, False
+    if any(s1.id in data.incompatibilities.get(data.stores[s].id, set()) for s in stores_w2):
+        return solution, False
+    
+    supply_matrix[s1_idx][w1] = 0
+    supply_matrix[s2_idx][w2] = 0
+    supply_matrix[s1_idx][w2] = s1.demand
+    supply_matrix[s2_idx][w1] = s2.demand
+
+    if w2 + 1 not in new_solution['open_warehouses']:
+        new_solution['open_warehouses'].append(w2 + 1)
+    if w1 + 1 not in new_solution['open_warehouses']:
+        new_solution['open_warehouses'].append(w1 + 1)
+
+    if not any(supply_matrix[s][w1] > 0 for s in range(len(data.stores))):
+        if w1 + 1 in new_solution['open_warehouses']:
+            new_solution['open_warehouses'].remove(w1 + 1)
+    if not any(supply_matrix[s][w2] > 0 for s in range(len(data.stores))):
+        if w2 + 1 in new_solution['open_warehouses']:
+            new_solution['open_warehouses'].remove(w2 + 1)
+
+    return new_solution, True
+
+
+    # for w1 in range(len(data.warehouses)):
+    #     if supply_matrix[s1_idx][w1] > 0 and supply_matrix[s2_idx][w1] == 0:
+    #         qty = supply_matrix[s1_idx][w1]
+    #         used = sum(supply_matrix[s][w1] for s in range(len(data.stores)))
+    #         capacity = data.warehouses[w1].capacity
+
+    #         if used - qty + s2.demand > capacity:
+    #             continue
+
+    #         stores_assigned = [s for s in range(len(data.stores)) if supply_matrix[s][w1] > 0]
+    #         if any(s2.id in data.incompatibilities.get(data.stores[s].id, set()) for s in stores_assigned):
+    #             continue
+
+    #         for w in range(len(data.warehouses)):
+    #             supply_matrix[s2_idx][w] = 0
+    #         supply_matrix[s2_idx][w1] = s2.demand
+
+    #         return new_solution, True
+
+    # return solution, False
