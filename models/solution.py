@@ -24,11 +24,32 @@ class InitialSolution:
 			f.write("{")
 			f.write(", ".join(f"({s},{w},{q})" for s,w,q in triplets))
 			f.write("}")
-		print("Solution written successfully. ")
+		# print("Solution written successfully. ")
+	
+	def compute_fitness(self, instance_data):
 			
+			total_fixed_cost = 0
+			total_supply_cost = 0
+			used_warehouses = set()
+
+			for store_id, assignments in self.store_assignments.items():
+				for (warehouse_id, quantity) in assignments:
+					if quantity > 0:
+						used_warehouses.add(warehouse_id)
+						# Access supply cost from instance data
+						supply_cost = instance_data.stores[store_id - 1].supply_costs[warehouse_id - 1]
+						total_supply_cost += quantity * supply_cost
+
+			# Sum fixed costs of warehouses used
+			for w in instance_data.warehouses:
+				if w.id in used_warehouses:
+					total_fixed_cost += w.fixed_cost
+
+			total_cost = total_fixed_cost + total_supply_cost
+			# Return negative cost because we want to maximize fitness
+			return total_cost
 
 	
-
 	@staticmethod
 	def generate_initial_solution(input_file: str):
 		warehouse_parser = parser.WarehouseParser(input_file) 

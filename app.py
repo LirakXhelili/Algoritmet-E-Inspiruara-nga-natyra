@@ -1,6 +1,7 @@
 from collections import defaultdict
 from models.parser import WarehouseParser
 from models.solution import InitialSolution
+
 import os
 import copy
 from Operator.warehouse_operator import(move_to_cheaper_warehouse, operator_swap_store_assignments)
@@ -39,7 +40,7 @@ def validate_solution(solution: dict, data):
     open_warehouses = set(solution['open_warehouses'])
     for wh_idx in range(len(data.warehouses)):
         if wh_idx + 1 not in open_warehouses:
-            # warehouse closed, check no supply from it
+         
             for store_idx in range(len(data.stores)):
                 if solution['supply_matrix'][store_idx][wh_idx] > 0:
                     return False, f"Store {data.stores[store_idx].id} supplied from closed warehouse {data.warehouses[wh_idx].id}"
@@ -104,51 +105,53 @@ if __name__ == '__main__':
         print(f"\nProcessing: {file_name}")
 
         
-    parser = WarehouseParser(input_path)
-    data = parser.parse()
+        parser = WarehouseParser(input_path)
+        data = parser.parse()
 
-    initial_sol = InitialSolution.generate_initial_solution(input_path)
+        initial_sol = InitialSolution.generate_initial_solution(input_path)
 
-   
-    current_solution = {
-        'open_warehouses': list(initial_sol.used_warehouses),  
-        'total_cost': 0, 
-        'supply_matrix': [[0 for _ in range(len(data.warehouses))] for _ in range(len(data.stores))]
-       
-    }
-    for store_id in initial_sol.store_assignments:
-        for (w_id, q) in initial_sol.store_assignments[store_id]:
-            current_solution['supply_matrix'][store_id-1][w_id-1] = q
+        fitness = initial_sol.compute_fitness(data)
+        print("Initial solution fitness:", fitness)
+
+        current_solution = {
+            'open_warehouses': list(initial_sol.used_warehouses),  
+            'total_cost': 0, 
+            'supply_matrix': [[0 for _ in range(len(data.warehouses))] for _ in range(len(data.stores))]
+        
+        }
+        for store_id in initial_sol.store_assignments:
+            for (w_id, q) in initial_sol.store_assignments[store_id]:
+                current_solution['supply_matrix'][store_id-1][w_id-1] = q
+        
+        is_valid, message = validate_solution(current_solution, data)
+        print(f"Initial solution validation: {message}")
+        if not is_valid:
+            raise ValueError("Initial solution is invalid")
+
     
-    is_valid, message = validate_solution(current_solution, data)
-    print(f"Initial solution validation: {message}")
-    if not is_valid:
-        raise ValueError("Initial solution is invalid")
-
- 
-    save_solution_to_file(current_solution, "./Output/initial_solution.txt")
+        save_solution_to_file(current_solution, "./Output/initial_solution.txt")
 
 
-print("\n=== APPLYING OPERATORS ===")
+    print("\n=== APPLYING OPERATORS ===")
 
-new_solution_1, success_1 = move_to_cheaper_warehouse(current_solution, data)
-if success_1:
-    cost_1 = calculate_total_cost(new_solution_1, data)
-    is_valid, msg = validate_solution(new_solution_1, data)
-    print(f"[Move to Cheaper] Cost: {cost_1}, Valid: {is_valid}, Message: {msg}")
-    save_solution_to_file(new_solution_1, "./Output/solution_after_operator1.txt")
-else:
-    print("Operator 1: No move applied.")
+    new_solution_1, success_1 = move_to_cheaper_warehouse(current_solution, data)
+    if success_1:
+        cost_1 = calculate_total_cost(new_solution_1, data)
+        is_valid, msg = validate_solution(new_solution_1, data)
+        print(f"[Move to Cheaper] Cost: {cost_1}, Valid: {is_valid}, Message: {msg}")
+        save_solution_to_file(new_solution_1, "./Output/solution_after_operator1.txt")
+    else:
+        print("Operator 1: No move applied.")
 
 
-new_solution_2, success_2 = operator_swap_store_assignments(current_solution, data)
-if success_2:
-    cost_2 = calculate_total_cost(new_solution_2, data)
-    is_valid, msg = validate_solution(new_solution_2, data)
-    print(f"[Swap Stores] Cost: {cost_2}, Valid: {is_valid}, Message: {msg}")
-    save_solution_to_file(new_solution_2, "./Output/solution_after_operator2.txt")
-else:
-    print("Operator 2: No swap applied.")
+    new_solution_2, success_2 = operator_swap_store_assignments(current_solution, data)
+    if success_2:
+        cost_2 = calculate_total_cost(new_solution_2, data)
+        is_valid, msg = validate_solution(new_solution_2, data)
+        print(f"[Swap Stores] Cost: {cost_2}, Valid: {is_valid}, Message: {msg}")
+        save_solution_to_file(new_solution_2, "./Output/solution_after_operator2.txt")
+    else:
+        print("Operator 2: No swap applied.")
   
     # optimized_solution, success = warehouse_operator(
     #     data.warehouses,  

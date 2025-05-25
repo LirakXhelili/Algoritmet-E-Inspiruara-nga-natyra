@@ -32,10 +32,11 @@ class InstanceData:
         self.incompatibilities = incompatibilities
 
     def describe(self):
-        print(f"Number of Warehouses: {self.num_warehouses}")
-        print(f"Number of Stores: {self.num_stores}")
-        print(f"Warehouses: {self.warehouses}")
-        print(f"Stores: {self.stores}")
+        # print(f"Number of Warehouses: {self.num_warehouses}")
+        # print(f"Number of Stores: {self.num_stores}")
+        # print(f"Warehouses: {self.warehouses}")
+        # print(f"Stores: {self.stores}")
+        pass
 
 
 class WarehouseParser:
@@ -49,7 +50,7 @@ class WarehouseParser:
 
                 # Debug: Print the content to verify file is loaded correctly
                 print("File content loaded successfully:")
-                print(content[:1000])  # Print only the first 1000 characters for clarity
+                # print(content[:1000]) 
 
                 # Adjust regex to handle extra spaces or potential newline characters
                 warehouses_match = re.search(r"Warehouses\s*=\s*(\d+)\s*;", content)
@@ -61,7 +62,7 @@ class WarehouseParser:
                 num_warehouses = int(warehouses_match.group(1))
                 num_stores = int(stores_match.group(1))
 
-                print(f"Parsed warehouses: {num_warehouses}, stores: {num_stores}")
+                # print(f"Parsed warehouses: {num_warehouses}, stores: {num_stores}")
 
                 # Parse the arrays for Capacity, FixedCost, Goods, etc.
                 capacity = self._parse_array(content, "Capacity")
@@ -120,7 +121,7 @@ class WarehouseParser:
                     incompatibilities[s1].add(s2)
                     incompatibilities[s2].add(s1)
 
-                # Create warehouse, store, and supply objects
+           
                 warehouses = [
                     warehouse(id=i + 1, capacity=capacity[i], fixed_cost=fixed_cost[i])
                     for i in range(num_warehouses)
