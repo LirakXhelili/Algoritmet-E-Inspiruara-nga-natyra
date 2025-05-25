@@ -6,13 +6,17 @@ from models import store
 from models import supply
 from collections import defaultdict
 
+
+
 class InitialSolution:
-    def __init__(self, used_warehouses, unused_warehouses, store_assignments, data):
+    def __init__(self, used_warehouses, unused_warehouses, store_assignments,warehouse_info, data):
         self.used_warehouses = used_warehouses
         self.unused_warehouses = unused_warehouses
         self.store_assignments = store_assignments
         self.data = data
         self.supply_matrix = self.convert_assignments_to_matrix()
+        self.warehouse_info = warehouse_info
+        
 
     def write_results(self, filename="initial_solution.txt"):
         triplets = []
@@ -116,4 +120,4 @@ class InitialSolution:
         used_warehouses = [w_id for w_id, w in warehouse_info.items() if len(w['assigned_stores']) > 0]
         unused_warehouses = [w_id for w_id, w in warehouse_info.items() if len(w['assigned_stores']) == 0]
 
-        return InitialSolution(used_warehouses, unused_warehouses, store_assignments, data)
+        return InitialSolution(used_warehouses, unused_warehouses, store_assignments,warehouse_info, data)

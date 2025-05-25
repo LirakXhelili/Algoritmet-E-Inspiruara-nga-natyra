@@ -4,7 +4,8 @@ from models.solution import InitialSolution
 
 import os
 import copy
-from Operator.warehouse_operator import(move_to_cheaper_warehouse, operator_swap_store_assignments)
+from Operator.warehouse_operator import move_to_cheaper_warehouse, operator_swap_store_assignments
+
 def validate_solution(solution, data):
     # Check store demands are met
     for store_id, assigns in solution.store_assignments.items():
@@ -38,6 +39,28 @@ def validate_solution(solution, data):
 
     return True, "Solution is valid"
 
+def optimize_solution(initial_sol, data, max_iter=100):
+    current_sol = initial_sol
+    best_cost = current_sol.compute_fitness()
+    
+    for _ in range(max_iter):
+        # Apply operator 1
+        new_sol, improved1 = move_to_cheaper_warehouse(copy.deepcopy(current_sol), data)
+        
+        # Apply operator 2
+        new_sol, improved2 = operator_swap_store_assignments(new_sol, data)
+        
+        # Check if improvement was made
+        new_cost = new_sol.compute_fitness()
+        if new_cost < best_cost:
+            current_sol = new_sol
+            best_cost = new_cost
+            print(f"New best cost: {best_cost}")
+        elif not (improved1 or improved2):
+            break  # No more improvements possible
+    
+    return current_sol
+
 if __name__ == '__main__':
     input_folder = './inputs'
     output_folder = './output'
@@ -57,19 +80,16 @@ if __name__ == '__main__':
         # Generate initial solution
         initial_sol = InitialSolution.generate_initial_solution(input_path)
         
-        # Validate solution
-        is_valid, message = validate_solution(initial_sol, data)
-        print(f"Solution validation: {is_valid} - {message}")
+        # Optimize the solution
+        optimized_sol = optimize_solution(initial_sol, data)
         
-        if not is_valid:
-            print("Warning: Initial solution is invalid!")
-            continue
-
-        # Calculate and print cost
-        total_cost = initial_sol.compute_fitness()
-        print(f"Initial solution cost: {total_cost}")
+        # Validate solution
+        is_valid, message = validate_solution(optimized_sol, data)
+        print(f"Optimized solution validation: {is_valid} - {message}")
+        print(f"Initial cost: {initial_sol.compute_fitness()}")
+        print(f"Optimized cost: {optimized_sol.compute_fitness()}")
 
         # Save solution
-        output_path = os.path.join(output_folder, f"sol_{file_name}.txt")
-        initial_sol.write_results(output_path)
-        print(f"Solution saved to {output_path}")
+        output_path = os.path.join(output_folder, f"opt_{file_name}.txt")
+        optimized_sol.write_results(output_path)
+        print(f"Optimized solution saved to {output_path}")

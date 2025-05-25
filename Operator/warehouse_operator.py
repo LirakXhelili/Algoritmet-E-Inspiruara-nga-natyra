@@ -1,133 +1,133 @@
-import random
-import copy
 from collections import defaultdict
 
-
-
 def move_to_cheaper_warehouse(solution, data):
-    new_solution = copy.deepcopy(solution)
-    supply_matrix = new_solution['supply_matrix']
-    open_warehouses = set(new_solution['open_warehouses'])
-
-    store_idx = random.randint(0,len(data.stores)-1)
-    store = data.stores[store_idx]
-    current_supply = supply_matrix[store_idx]
-
-    current_suppliers = [(wh_idx,q)for wh_idx, q in enumerate(current_supply) if q>0]
-    if not current_suppliers:
-        return solution, False
+    """
+    Operator 1: Move store assignments to cheaper warehouses
+    Returns: (updated solution, improvement_made)
+    """
+    improved = False
     
-    wh_from, qty_from = random.choice(current_suppliers)
-    current_cost = store.supply_costs[wh_from]
-    candidates = [
-        (wh_idx, cost) for wh_idx, cost in enumerate(store.supply_costs)
-        if cost < current_cost and wh_idx != wh_from
-    ]
-    candidates.sort(key=lambda x: x[1])
-
-    for wh_to, cost_to in candidates:
-            if wh_to not in open_warehouses:
-                continue
-
-            used = sum(supply_matrix[s][wh_to] for s in range(len(data.stores)))
-            capacity = data.warehouses[wh_to].capacity
-            if used + qty_from > capacity:
-                continue
-
-            stores_at_wh_to = [s for s in range(len(data.stores)) if supply_matrix[s][wh_to] > 0]
-            incompatible = any(
-                data.stores[s].id in data.incompatibilities.get(store.id, set())
-                for s in stores_at_wh_to
-            )
-            if incompatible:
-                continue
-
-            supply_matrix[store_idx][wh_from] = 0
-            supply_matrix[store_idx][wh_to] += qty_from
-            if wh_to + 1 not in new_solution['open_warehouses']:
-                new_solution['open_warehouses'].append(wh_to + 1)
-
-
-            still_used = any(supply_matrix[s][wh_from] > 0 for s in range(len(data.stores)))
-            if not still_used:
-                new_solution['open_warehouses'].remove(wh_from + 1)
-
-            return new_solution, True
-
-    return solution, False
+    for store_id in list(solution.store_assignments.keys()):
+        # Get current assignments for this store
+        current_assigns = solution.store_assignments[store_id].copy()
+        
+        for w_from, qty in current_assigns:
+            current_cost = solution.data.warehouses[w_from-1].fixed_cost + \
+                          qty * solution.data.stores[store_id-1].supply_costs[w_from-1]
+            
+            # Find all possible alternative warehouses
+            for wh in solution.data.warehouses:
+                w_to = wh.id
+                if w_to == w_from:
+                    continue
+                
+                # Check if move is possible
+                if (wh.capacity - solution.warehouse_info[w_to]['remaining']) >= qty:
+                    continue  # Not enough capacity
+                
+                # Check for incompatibilities
+                store_incompat = solution.data.incompatibilities.get(store_id, set())
+                if store_incompat & solution.warehouse_info[w_to]['assigned_stores']:
+                    continue  # Incompatible stores
+                
+                # Calculate new cost
+                new_cost = wh.fixed_cost + qty * solution.data.stores[store_id-1].supply_costs[w_to-1]
+                
+                if new_cost < current_cost:
+                    # Perform the move
+                    solution.store_assignments[store_id].remove((w_from, qty))
+                    solution.store_assignments[store_id].append((w_to, qty))
+                    
+                    # Update warehouse info
+                    solution.warehouse_info[w_from]['remaining'] += qty
+                    solution.warehouse_info[w_from]['assigned_stores'].discard(store_id)
+                    solution.warehouse_info[w_to]['remaining'] -= qty
+                    solution.warehouse_info[w_to]['assigned_stores'].add(store_id)
+                    
+                    # Update used/unused warehouses
+                    if len(solution.warehouse_info[w_from]['assigned_stores']) == 0:
+                        solution.used_warehouses.remove(w_from)
+                        solution.unused_warehouses.append(w_from)
+                    if w_to in solution.unused_warehouses:
+                        solution.unused_warehouses.remove(w_to)
+                        solution.used_warehouses.append(w_to)
+                    
+                    improved = True
+                    break  # Move to next assignment
+        
+    return solution, improved
 
 def operator_swap_store_assignments(solution, data):
-   
-    new_solution = copy.deepcopy(solution)
-    supply_matrix = new_solution['supply_matrix']
-    open_warehouses = set(new_solution['open_warehouses'])
-
-    s1_idx, s2_idx = random.sample(range(len(data.stores)), 2)
-    s1, s2 = data.stores[s1_idx], data.stores[s2_idx]
-
-    w1 = next((w for w in range(len(data.warehouses)) if supply_matrix[s1_idx][w] > 0), None)
-    w2 = next((w for w in range(len(data.warehouses)) if supply_matrix[s2_idx][w] > 0), None)
-
-    if w1 is None or w2 is None or w1 == w2:
-        return solution, False
+    """
+    Operator 2: Swap assignments between two stores to reduce costs
+    Returns: (updated solution, improvement_made)
+    """
+    improved = False
+    store_ids = list(solution.store_assignments.keys())
     
-    used_w1 = sum(supply_matrix[s][w1] for s in range(len(data.stores)))
-    used_w2 = sum(supply_matrix[s][w2] for s in range(len(data.stores)))
-
-    cap_w1 = data.warehouses[w1].capacity
-    cap_w2 = data.warehouses[w2].capacity
-
-    new_w1_usage = used_w1 - s1.demand + s2.demand
-    new_w2_usage = used_w2 - s2.demand + s1.demand
-
-    if new_w1_usage > cap_w1 or new_w2_usage > cap_w2:
-        return solution, False
+    for i in range(len(store_ids)):
+        for j in range(i+1, len(store_ids)):
+            s1, s2 = store_ids[i], store_ids[j]
+            
+            # Skip if stores are incompatible
+            if s2 in data.incompatibilities.get(s1, set()):
+                continue
+                
+            # Try swapping their warehouse assignments
+            for a1 in solution.store_assignments[s1].copy():
+                w1, q1 = a1
+                for a2 in solution.store_assignments[s2].copy():
+                    w2, q2 = a2
+                    
+                    if w1 == w2:
+                        continue  # No point swapping same warehouse
+                        
+                    # Check if swap is feasible
+                    wh1_cap = solution.warehouse_info[w1]['remaining'] + q1 >= q2
+                    wh2_cap = solution.warehouse_info[w2]['remaining'] + q2 >= q1
+                    
+                    if wh1_cap and wh2_cap:
+                        # Calculate current cost
+                        current_cost = (
+                            solution.data.warehouses[w1-1].fixed_cost +
+                            solution.data.warehouses[w2-1].fixed_cost +
+                            q1 * solution.data.stores[s1-1].supply_costs[w1-1] +
+                            q2 * solution.data.stores[s2-1].supply_costs[w2-1]
+                        )
+                        
+                        # Calculate potential new cost
+                        new_cost = (
+                            solution.data.warehouses[w1-1].fixed_cost +
+                            solution.data.warehouses[w2-1].fixed_cost +
+                            q2 * solution.data.stores[s1-1].supply_costs[w1-1] +
+                            q1 * solution.data.stores[s2-1].supply_costs[w2-1]
+                        )
+                        
+                        if new_cost < current_cost:
+                            # Perform the swap
+                            solution.store_assignments[s1].remove((w1, q1))
+                            solution.store_assignments[s2].remove((w2, q2))
+                            solution.store_assignments[s1].append((w2, q2))
+                            solution.store_assignments[s2].append((w1, q1))
+                            
+                            # Update warehouse info
+                            solution.warehouse_info[w1]['remaining'] += q1 - q2
+                            solution.warehouse_info[w2]['remaining'] += q2 - q1
+                            
+                            # Update assigned stores
+                            solution.warehouse_info[w1]['assigned_stores'].discard(s1)
+                            solution.warehouse_info[w1]['assigned_stores'].add(s2)
+                            solution.warehouse_info[w2]['assigned_stores'].discard(s2)
+                            solution.warehouse_info[w2]['assigned_stores'].add(s1)
+                            
+                            improved = True
+                            break  # Move to next store pair
+                
+                if improved:
+                    break
+            if improved:
+                break
+        if improved:
+            break
     
-    stores_w1 = [s for s in range(len(data.stores)) if supply_matrix[s][w1] > 0 and s != s1_idx]
-    stores_w2 = [s for s in range(len(data.stores)) if supply_matrix[s][w2] > 0 and s != s2_idx]
-
-    if any(s2.id in data.incompatibilities.get(data.stores[s].id, set()) for s in stores_w1):
-        return solution, False
-    if any(s1.id in data.incompatibilities.get(data.stores[s].id, set()) for s in stores_w2):
-        return solution, False
-    
-    supply_matrix[s1_idx][w1] = 0
-    supply_matrix[s2_idx][w2] = 0
-    supply_matrix[s1_idx][w2] = s1.demand
-    supply_matrix[s2_idx][w1] = s2.demand
-
-    if w2 + 1 not in new_solution['open_warehouses']:
-        new_solution['open_warehouses'].append(w2 + 1)
-    if w1 + 1 not in new_solution['open_warehouses']:
-        new_solution['open_warehouses'].append(w1 + 1)
-
-    if not any(supply_matrix[s][w1] > 0 for s in range(len(data.stores))):
-        if w1 + 1 in new_solution['open_warehouses']:
-            new_solution['open_warehouses'].remove(w1 + 1)
-    if not any(supply_matrix[s][w2] > 0 for s in range(len(data.stores))):
-        if w2 + 1 in new_solution['open_warehouses']:
-            new_solution['open_warehouses'].remove(w2 + 1)
-
-    return new_solution, True
-
-
-    # for w1 in range(len(data.warehouses)):
-    #     if supply_matrix[s1_idx][w1] > 0 and supply_matrix[s2_idx][w1] == 0:
-    #         qty = supply_matrix[s1_idx][w1]
-    #         used = sum(supply_matrix[s][w1] for s in range(len(data.stores)))
-    #         capacity = data.warehouses[w1].capacity
-
-    #         if used - qty + s2.demand > capacity:
-    #             continue
-
-    #         stores_assigned = [s for s in range(len(data.stores)) if supply_matrix[s][w1] > 0]
-    #         if any(s2.id in data.incompatibilities.get(data.stores[s].id, set()) for s in stores_assigned):
-    #             continue
-
-    #         for w in range(len(data.warehouses)):
-    #             supply_matrix[s2_idx][w] = 0
-    #         supply_matrix[s2_idx][w1] = s2.demand
-
-    #         return new_solution, True
-
-    # return solution, False
+    return solution, improved
