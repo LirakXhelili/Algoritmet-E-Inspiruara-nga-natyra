@@ -2,6 +2,7 @@ from collections import defaultdict
 from models.parser import WarehouseParser
 from models.solution import InitialSolution
 import os
+import copy
 from Operator.warehouse_operator import(move_to_cheaper_warehouse, operator_swap_store_assignments)
 def validate_solution(solution: dict, data):
    
@@ -139,7 +140,7 @@ if success_1:
 else:
     print("Operator 1: No move applied.")
 
-# 2. Operator: swap store assignments
+
 new_solution_2, success_2 = operator_swap_store_assignments(current_solution, data)
 if success_2:
     cost_2 = calculate_total_cost(new_solution_2, data)
