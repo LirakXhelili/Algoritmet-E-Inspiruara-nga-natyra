@@ -1,6 +1,7 @@
 from collections import defaultdict
 from models.parser import WarehouseParser
 from models.solution import InitialSolution
+import os
 from Operator.warehouse_operator import(move_to_cheaper_warehouse, operator_swap_store_assignments)
 def validate_solution(solution: dict, data):
    
@@ -90,14 +91,22 @@ def calculate_total_cost(solution, data):
 
 
 if __name__ == '__main__':
-    input_file = './inputs/wlp01.dzn'  
-    output_file = './Output/output.txt'  
+    input_folder = './inputs'  
+    output_folder = './Output'  
+    os.makedirs(output_folder,exist_ok=True)
 
-    
-    parser = WarehouseParser(input_file)
+    for file_name in os.listdir(input_folder):
+        if not file_name.endswith('.dzn'):
+            continue
+
+        input_path = os.path.join(input_folder, file_name)
+        print(f"\nProcessing: {file_name}")
+
+        
+    parser = WarehouseParser(input_path)
     data = parser.parse()
 
-    initial_sol = InitialSolution.generate_initial_solution(input_file)
+    initial_sol = InitialSolution.generate_initial_solution(input_path)
 
    
     current_solution = {
