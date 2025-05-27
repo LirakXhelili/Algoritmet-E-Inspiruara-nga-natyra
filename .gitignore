@@ -1,7 +1,12 @@
-# Output directories
+# Output directories and files
 output/
 output_ILS/
 Output/
+outputs/
+results/
+*.out
+*.result
+*.solution
 
 # Large input files (>50MB)
 inputs/wlp17.dzn
@@ -31,4 +36,12 @@ Thumbs.db
 *.temp
 current_solution.txt
 initial_solution.txt
-optimized_solution.txt 
+optimized_solution.txt
+
+# Any text files that might be output
+*_solution.txt
+*_result.txt
+*_output.txt
+opt_*.txt
+*_ILS.txt
+*_optimized.txt 
