@@ -12,8 +12,7 @@ def move_to_cheaper_warehouse(solution, data):
         current_assigns = solution.store_assignments[store_id].copy()
         
         for w_from, qty in current_assigns:
-            current_cost = solution.data.warehouses[w_from-1].fixed_cost + \
-                          qty * solution.data.stores[store_id-1].supply_costs[w_from-1]
+            current_cost = qty * solution.data.stores[store_id-1].supply_costs[w_from-1]
             
             # Find all possible alternative warehouses
             for wh in solution.data.warehouses:
@@ -21,8 +20,8 @@ def move_to_cheaper_warehouse(solution, data):
                 if w_to == w_from:
                     continue
                 
-                # Check if move is possible
-                if (wh.capacity - solution.warehouse_info[w_to]['remaining']) >= qty:
+                # Check if move is possible (FIXED: was backwards)
+                if solution.warehouse_info[w_to]['remaining'] < qty:
                     continue  # Not enough capacity
                 
                 # Check for incompatibilities
@@ -30,8 +29,8 @@ def move_to_cheaper_warehouse(solution, data):
                 if store_incompat & solution.warehouse_info[w_to]['assigned_stores']:
                     continue  # Incompatible stores
                 
-                # Calculate new cost
-                new_cost = wh.fixed_cost + qty * solution.data.stores[store_id-1].supply_costs[w_to-1]
+                # Calculate new cost (FIXED: removed fixed cost double counting)
+                new_cost = qty * solution.data.stores[store_id-1].supply_costs[w_to-1]
                 
                 if new_cost < current_cost:
                     # Perform the move
@@ -44,12 +43,15 @@ def move_to_cheaper_warehouse(solution, data):
                     solution.warehouse_info[w_to]['remaining'] -= qty
                     solution.warehouse_info[w_to]['assigned_stores'].add(store_id)
                     
-                    # Update used/unused warehouses
+                    # Update used/unused warehouses (FIXED: safe list operations)
                     if len(solution.warehouse_info[w_from]['assigned_stores']) == 0:
-                        solution.used_warehouses.remove(w_from)
-                        solution.unused_warehouses.append(w_from)
+                        if w_from in solution.used_warehouses:
+                            solution.used_warehouses.remove(w_from)
+                        if w_from not in solution.unused_warehouses:
+                            solution.unused_warehouses.append(w_from)
                     if w_to in solution.unused_warehouses:
                         solution.unused_warehouses.remove(w_to)
+                    if w_to not in solution.used_warehouses:
                         solution.used_warehouses.append(w_to)
                     
                     improved = True
@@ -87,18 +89,14 @@ def operator_swap_store_assignments(solution, data):
                     wh2_cap = solution.warehouse_info[w2]['remaining'] + q2 >= q1
                     
                     if wh1_cap and wh2_cap:
-                        # Calculate current cost
+                        # Calculate current cost (FIXED: removed fixed cost double counting)
                         current_cost = (
-                            solution.data.warehouses[w1-1].fixed_cost +
-                            solution.data.warehouses[w2-1].fixed_cost +
                             q1 * solution.data.stores[s1-1].supply_costs[w1-1] +
                             q2 * solution.data.stores[s2-1].supply_costs[w2-1]
                         )
                         
-                        # Calculate potential new cost
+                        # Calculate potential new cost (FIXED: removed fixed cost double counting)
                         new_cost = (
-                            solution.data.warehouses[w1-1].fixed_cost +
-                            solution.data.warehouses[w2-1].fixed_cost +
                             q2 * solution.data.stores[s1-1].supply_costs[w1-1] +
                             q1 * solution.data.stores[s2-1].supply_costs[w2-1]
                         )
