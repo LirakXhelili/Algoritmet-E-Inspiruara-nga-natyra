@@ -3,6 +3,12 @@ output/
 output_ILS/
 Output/
 
+# Large input files (>50MB)
+inputs/wlp17.dzn
+inputs/wlp18.dzn
+inputs/wlp19.dzn
+inputs/wlp20.dzn
+
 # Python cache
 __pycache__/
 *.pyc
