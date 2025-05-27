@@ -1,0 +1,28 @@
+# Output directories
+output/
+output_ILS/
+Output/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+current_solution.txt
+initial_solution.txt
+optimized_solution.txt 
