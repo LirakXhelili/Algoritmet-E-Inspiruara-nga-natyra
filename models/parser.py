@@ -5,22 +5,7 @@ from models.store import store
 from models.supply import supply
 from models.instance_data import InstanceData
 
-# class warehouse:
-#     def __init__(self, id, capacity, fixed_cost):
-#         self.id = id
-#         self.capacity = capacity
-#         self.fixed_cost = fixed_cost
 
-# class store:
-#     def __init__(self, id, demand):
-#         self.id = id
-#         self.demand = demand
-
-# class supply:
-#     def __init__(self, store_id, warehouse_id, cost):
-#         self.store_id = store_id
-#         self.warehouse_id = warehouse_id
-#         self.cost = cost
 
 class InstanceData:
     def __init__(self, num_warehouses, num_stores, warehouses, stores, supply, incompatibilities):
@@ -48,11 +33,8 @@ class WarehouseParser:
             with open(self.file_path, 'r') as file:
                 content = file.read()
 
-                # Debug: Print the content to verify file is loaded correctly
                 print("File content loaded successfully:")
-                # print(content[:1000]) 
-
-                # Adjust regex to handle extra spaces or potential newline characters
+                 
                 warehouses_match = re.search(r"Warehouses\s*=\s*(\d+)\s*;", content)
                 stores_match = re.search(r"Stores\s*=\s*(\d+)\s*;", content)
 
@@ -64,7 +46,7 @@ class WarehouseParser:
 
                 # print(f"Parsed warehouses: {num_warehouses}, stores: {num_stores}")
 
-                # Parse the arrays for Capacity, FixedCost, Goods, etc.
+                
                 capacity = self._parse_array(content, "Capacity")
                 fixed_cost = self._parse_array(content, "FixedCost")
                 goods = self._parse_array(content, "Goods")
@@ -76,7 +58,7 @@ class WarehouseParser:
                 if len(goods) != num_stores:
                     raise ValueError(f"Expected {num_stores} goods values, got {len(goods)}")
 
-                # Parse the supply cost data
+                
                 supply_cost_match = re.search(r"SupplyCost\s*=\s*\[\s*([^]]+)\]\s*;", content, re.DOTALL)
                 if not supply_cost_match:
                     raise ValueError("SupplyCost matrix not found or malformed")
@@ -92,7 +74,7 @@ class WarehouseParser:
                         raise ValueError(f"Expected {num_warehouses} supply costs per row, got {len(row)}")
                     supply_costs.append(row)
 
-                # Parse incompatibilities
+
                 incompat_match = re.search(r"Incompatibilities\s*=\s*(\d+)\s*;", content)
                 if not incompat_match:
                     raise ValueError("Incompatibilities count not found")
@@ -115,7 +97,7 @@ class WarehouseParser:
                 if len(pairs) != num_incompat:
                     raise ValueError(f"Expected {num_incompat} incompatible pairs, got {len(pairs)}")
 
-                # Convert to dictionary format for incompatibilities
+                
                 incompatibilities = {s: set() for s in range(1, num_stores + 1)}
                 for s1, s2 in pairs:
                     incompatibilities[s1].add(s2)
